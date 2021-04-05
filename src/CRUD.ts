@@ -1,18 +1,12 @@
 // Imports
 import express, { request, response } from 'express';
 import { ObjectID } from 'mongodb';
+import cors from 'cors';
 
 // Express elements
 const app = express();
+app.use(cors())
 app.use(express.json());
-
-// ID validation middleware
-app.use("*:id", (request, response, next) => {
-    if (!ObjectID.isValid(request.params.id)) {
-        return response.status(400).json({ "message": "Invalid ID" });
-    }
-    next();
-})
 
 // MongoDB configs and elements
 const mongoClient = require('mongodb').MongoClient;
@@ -35,6 +29,25 @@ mongoClient.connect(dbUrl, (err, db) => {
         return response.status(404).json({ "message": "User not found" }); // If user does not exist
     })
 
+    app.get("/users/recent/:id", async (request, response) => {
+        const thisUser = await dbObject.collection("users").findOne({ _id: new ObjectID(request.params.id) }); // Find user
+
+        if(thisUser == null){
+            return response.status(404).json({ "message": "User not found" }); // If user does not exist
+        }
+
+        const recentTrades = [];
+        for (let i = 0; i < 5; i++) {
+            let thisTrade = await dbObject.collection("operations").findOne({ _id: new ObjectID(thisUser.tradeHistory[i]) });
+            if(thisTrade == null){
+                break;
+            }
+            recentTrades[i] = thisTrade;
+        }
+
+        return response.status(200).send(recentTrades);
+    })
+
     // Select operation by ID
     app.get("/operations/:id", async (request, response) => {
         const thisOperation = await dbObject.collection("operations").findOne({ _id: new ObjectID(request.params.id) }); // Find operation
@@ -48,12 +61,13 @@ mongoClient.connect(dbUrl, (err, db) => {
 
     // Create new user
     app.post("/users", async (request, response) => {
-        const { username, password, birthday } = request.body // User data
+        const { username, email,password, birthday } = request.body // User data
 
         // New user object
         const newUser = {
             _id: new ObjectID(), // Create unique ID
             username,
+            email,
             password,
             birthday,
             createdAt: Date.now(),
@@ -72,15 +86,16 @@ mongoClient.connect(dbUrl, (err, db) => {
 
     // Create new operation
     app.post("/operations", async (request, response) => {
-        const { deposit, rate, user_id } = request.body; // Operation data
+        const { type, deposit, rate, user_id } = request.body; // Operation data
 
         // New operation object
         const newOperation = {
             _id: new ObjectID(), // Create unique ID
-            user_id,
+            type,
             deposit,
             rate,
-            date: Date.now(),
+            user_id,
+            date: new Date().toISOString().replace('T', ' ').replace(/\..+/, '')
         };
 
         const operation = await dbObject.collection("operations").insertOne(newOperation); // Creates new DB document
