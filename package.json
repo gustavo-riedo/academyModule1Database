@@ -1,10 +1,10 @@
 {
-  "name": "academymodule1",
+  "name": "academymodule1database",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "dev": "ts-node-dev --transpile-only --ignore-watch node_modules src/CRUD.ts"
+    "database": "ts-node-dev --transpile-only --ignore-watch node_modules src/CRUD.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",
