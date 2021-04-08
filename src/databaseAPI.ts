@@ -81,7 +81,6 @@ mongoClient.connect(dbUrl, (err, db) => {
          }
          recentTrades[i] = thisTrade;
       }
-
       return response.status(200).send(recentTrades); // Return recent trades array as a response
    });
 
